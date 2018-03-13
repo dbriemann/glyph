@@ -1,0 +1,29 @@
+# github_token DOES NOT contain the actual API token but the name of the
+# environment variable containing it. Usually just leave this as the default
+# and export your API token.
+# (e.g. on linux: export JUICER_ACCESS_TOKEN=the_actual_token)
+# ***********************************************
+# *** DO NOT ENTER YOUR GITHUB API TOKEN HERE ***
+# ***********************************************
+# This is a security measure so people don't commit their API token to their
+# git repository.
+github_token = "JUICER_ACCESS_TOKEN"
+
+
+# section repository contains all data regarding the repository that contains
+# the site/blog issues.
+[repository]
+# users defines all users whose issues will be imported into the blog
+# the first user must be the owner of the blog repository
+# all usernames are login names for github
+users = ["dbriemann"]
+# name is just the name of the repository containing the blog issues/articles
+name = "blog"
+# target_dir is where juicer puts the built files. By default the docs folder is
+# used (see github pages documentation for more info). 
+target_dir = "docs"
+
+# section site contains all data that will be used in the statically generated
+# html. This includes titles, styles etc.
+[site]
+title = "RagingDave's random ramblings"
