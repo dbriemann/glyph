@@ -1,15 +1,3 @@
-# github_token DOES NOT contain the actual API token but the name of the
-# environment variable containing it. Usually just leave this as the default
-# and export your API token.
-# (e.g. on linux: export JUICER_ACCESS_TOKEN=the_actual_token)
-# ***********************************************
-# *** DO NOT ENTER YOUR GITHUB API TOKEN HERE ***
-# ***********************************************
-# This is a security measure so people don't commit their API token to their
-# git repository.
-github_token = "JUICER_ACCESS_TOKEN"
-
-
 # section repository contains all data regarding the repository that contains
 # the site/blog issues.
 [repository]

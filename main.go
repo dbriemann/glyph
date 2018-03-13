@@ -10,10 +10,10 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 )
 
 const (
+	baseDir    = "base-files"
 	configFile = "config.toml"
 )
 
@@ -27,7 +27,6 @@ var (
 // TODO 2.a. option: init project
 // TODO 2.b. option: build project
 // TODO 3. check config data for sanity
-// TODO 4. slugify issue titles
 
 func main() {
 	// Read config file and check sanity (TODO).
@@ -38,8 +37,6 @@ func main() {
 	if _, err := toml.Decode(string(raw), &cfg); err != nil {
 		panic(err.Error())
 	}
-	// Fetch Github access token from environment.
-	token := os.Getenv(cfg.GithubToken)
 
 	// Set output directory.
 	finfo, err := os.Stat(cfg.Repository.TargetDir)
@@ -52,17 +49,17 @@ func main() {
 		} else {
 			panic(err.Error())
 		}
-	}
-	if finfo == nil || !finfo.IsDir() {
-		panic(fmt.Sprintf("%s should be a directory but is a file", cfg.Repository.TargetDir))
+	} else {
+		if !finfo.IsDir() {
+			panic(fmt.Sprintf("%s should be a directory but is a file", cfg.Repository.TargetDir))
+		}
 	}
 
+	// We don't use access tokens because the rate limiting for unauthed access is good enough.
+	// This way we have an easy time using this in CI scripts without having to provide secret
+	// information.
 	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := github.NewClient(nil)
 
 	if client == nil {
 		panic("client not working")

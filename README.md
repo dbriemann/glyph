@@ -1,2 +1,2 @@
 # juicer
-A static site generator utilizing Github issues and pages.
+A static site generator utilizing Github issues and Github pages.

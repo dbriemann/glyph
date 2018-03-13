@@ -8,13 +8,15 @@ import (
 	"github.com/dbriemann/juicer/tmpl"
 	"github.com/google/go-github/github"
 	"github.com/gosimple/slug"
+	"github.com/microcosm-cc/bluemonday"
+	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
 type Issue struct {
 	Title   string
 	Link    string // slugified title
-	Content string
-	Summary string
+	Content template.HTML
+	Summary template.HTML
 }
 
 func prepareIssues(issues []*github.Issue) ([]Issue, error) {
@@ -22,14 +24,21 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 
 	for _, issue := range issues {
 		exIssue := Issue{
-			Title:   issue.GetTitle(),
-			Link:    slug.Make(issue.GetTitle()),
-			Content: issue.GetBody(),
+			Title: issue.GetTitle(),
+			Link:  slug.Make(issue.GetTitle()) + ".html",
 		}
 		if exIssue.Title != "" {
-			// We ignore issues with empty titles.
+			unsafe := blackfriday.Run([]byte(issue.GetBody()))
+			html := string(bluemonday.UGCPolicy().SanitizeBytes(unsafe))
+			exIssue.Content = template.HTML(html)
+			if len(exIssue.Content) > 200 {
+				exIssue.Summary = exIssue.Content[:200]
+			} else {
+				exIssue.Summary = exIssue.Content
+			}
 			export = append(export, exIssue)
 		}
+		// We ignore issues with empty titles.
 	}
 
 	return export, nil
@@ -41,6 +50,13 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 		return err
 	}
 
+	for _, exis := range exIssues {
+		err := exportIssue(exis, cfg)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = exportIndex(exIssues, cfg)
 	if err != nil {
 		return err
@@ -49,10 +65,34 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 	return nil
 }
 
-func exportIndex(issues []Issue, cfg *Config) error {
-	// TODO copy base files
+func exportIssue(issue Issue, cfg *Config) error {
+	itmpl, err := template.New(issue.Title).Parse(tmpl.IssueTmlp)
+	if err != nil {
+		return err
+	}
 
-	index, err := template.New("name").Parse(tmpl.IndexTmpl)
+	data := struct {
+		TITLE         string
+		ISSUE_TITLE   string
+		ISSUE_CONTENT template.HTML
+	}{
+		TITLE:         cfg.Site.Title,
+		ISSUE_TITLE:   issue.Title,
+		ISSUE_CONTENT: issue.Content,
+	}
+
+	f, err := os.Create(filepath.Join(cfg.Repository.TargetDir, issue.Link))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	err = itmpl.Execute(f, data)
+	return err
+}
+
+func exportIndex(issues []Issue, cfg *Config) error {
+	index, err := template.New("index").Parse(tmpl.IndexTmpl)
 	if err != nil {
 		return err
 	}
