@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"os"
 
@@ -13,7 +14,7 @@ import (
 )
 
 const (
-	baseDir    = "base-files"
+	baseDir    = "includes"
 	configFile = "config.toml"
 )
 
@@ -52,6 +53,20 @@ func main() {
 	} else {
 		if !finfo.IsDir() {
 			panic(fmt.Sprintf("%s should be a directory but is a file", cfg.Repository.TargetDir))
+		}
+	}
+
+	// Copy include files (css and js stuff).
+	files, err := ioutil.ReadDir(baseDir)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for _, f := range files {
+		src := filepath.Join(baseDir, f.Name())
+		dst := filepath.Join(cfg.Repository.TargetDir, f.Name())
+		if err := copyFile(src, dst); err != nil {
+			panic(err.Error())
 		}
 	}
 

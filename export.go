@@ -2,10 +2,10 @@ package main
 
 import (
 	"html/template"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/dbriemann/juicer/tmpl"
 	"github.com/google/go-github/github"
 	"github.com/gosimple/slug"
 	"github.com/microcosm-cc/bluemonday"
@@ -66,7 +66,11 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 }
 
 func exportIssue(issue Issue, cfg *Config) error {
-	itmpl, err := template.New(issue.Title).Parse(tmpl.IssueTmlp)
+	raw, err := ioutil.ReadFile("tmpl/issue.tmpl")
+	if err != nil {
+		return err
+	}
+	itmpl, err := template.New(issue.Title).Parse(string(raw))
 	if err != nil {
 		return err
 	}
@@ -92,7 +96,11 @@ func exportIssue(issue Issue, cfg *Config) error {
 }
 
 func exportIndex(issues []Issue, cfg *Config) error {
-	index, err := template.New("index").Parse(tmpl.IndexTmpl)
+	raw, err := ioutil.ReadFile("tmpl/index.tmpl")
+	if err != nil {
+		return err
+	}
+	index, err := template.New("index").Parse(string(raw))
 	if err != nil {
 		return err
 	}
