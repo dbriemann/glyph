@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	feedFile   = "feed.atom"
 	baseDir    = "includes"
 	configFile = "config.toml"
 )

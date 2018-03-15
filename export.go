@@ -1,12 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
+	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/cbroglie/mustache"
 	"github.com/google/go-github/github"
+	"github.com/gorilla/feeds"
 	"github.com/gosimple/slug"
-	"github.com/hoisie/mustache"
+
 	gfm "github.com/shurcooL/github_flavored_markdown"
 )
 
@@ -15,6 +21,38 @@ type Issue struct {
 	Link    string // slugified title
 	Content string
 	Summary string
+	Created time.Time
+}
+
+func exportFeed(issues []Issue) error {
+	now := time.Now()
+	feed := &feeds.Feed{
+		Title:       cfg.Site.Title,
+		Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s", cfg.Repository.Users[0], cfg.Repository.Name)},
+		Description: cfg.Site.OneLineDesc,
+		Author:      &feeds.Author{Name: cfg.Site.Author, Email: cfg.Site.Mail},
+		Created:     now,
+	}
+
+	feed.Items = []*feeds.Item{}
+
+	for _, issue := range issues {
+		item := &feeds.Item{
+			Title:       issue.Title,
+			Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s/%s", cfg.Repository.Users[0], cfg.Repository.Name, issue.Link)},
+			Description: issue.Summary,
+			Author:      &feeds.Author{Name: cfg.Site.Author, Email: cfg.Site.Mail},
+			Created:     issue.Created,
+		}
+		feed.Items = append(feed.Items, item)
+	}
+
+	atom, err := feed.ToAtom()
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filepath.Join(cfg.Repository.TargetDir, feedFile), []byte(atom), 0755)
 }
 
 func prepareIssues(issues []*github.Issue) ([]Issue, error) {
@@ -22,16 +60,22 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 
 	for _, issue := range issues {
 		exIssue := Issue{
-			Title: issue.GetTitle(),
-			Link:  slug.Make(issue.GetTitle()) + ".html",
+			Title:   issue.GetTitle(),
+			Link:    slug.Make(issue.GetTitle()) + ".html",
+			Created: issue.GetCreatedAt(),
 		}
 		if exIssue.Title != "" {
 			exIssue.Content = string(gfm.Markdown([]byte(issue.GetBody())))
-			if len(exIssue.Content) > 200 { // TODO
-				exIssue.Summary = exIssue.Content[:200]
-			} else {
-				exIssue.Summary = exIssue.Content
+			doc, err := goquery.NewDocumentFromReader(strings.NewReader(exIssue.Content))
+			if err == nil {
+				// Create a nice summary / introduction.
+				firstp := doc.Find("p").First()
+				html, err := firstp.Html()
+				if err == nil {
+					exIssue.Summary = html
+				}
 			}
+
 			export = append(export, exIssue)
 		}
 		// We ignore issues with empty titles.
@@ -53,6 +97,11 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 		}
 	}
 
+	err = exportFeed(exIssues)
+	if err != nil {
+		return err
+	}
+
 	err = exportIndex(exIssues, cfg)
 	if err != nil {
 		return err
@@ -62,15 +111,29 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 }
 
 func exportIssue(issue Issue, cfg *Config) error {
-	issueTmpl := mustache.RenderFileInLayout("tmpl/issue.mustache", "tmpl/layout.mustache", issue)
+	data := map[string]interface{}{
+		"Site":  cfg.Site,
+		"Today": time.Now(),
+		"Issue": issue,
+	}
+	issueTmpl, err := mustache.RenderFileInLayout("tmpl/issue.mustache", "tmpl/layout.mustache", data)
+	if err != nil {
+		return err
+	}
 	outname := filepath.Join(cfg.Repository.TargetDir, issue.Link)
-	err := ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
-	return err
+	return ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
 }
 
-func exportIndex(Issues []Issue, cfg *Config) error {
-	indexTmpl := mustache.RenderFileInLayout("tmpl/index.mustache", "tmpl/layout.mustache", map[string][]Issue{"Issues": Issues}, cfg.Site)
+func exportIndex(issues []Issue, cfg *Config) error {
+	data := map[string]interface{}{
+		"Site":   cfg.Site,
+		"Today":  time.Now(),
+		"Issues": issues,
+	}
+	indexTmpl, err := mustache.RenderFileInLayout("tmpl/index.mustache", "tmpl/layout.mustache", data)
+	if err != nil {
+		return err
+	}
 	outname := filepath.Join(cfg.Repository.TargetDir, "index.html")
-	err := ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
-	return err
+	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
 }

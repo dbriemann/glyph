@@ -12,7 +12,7 @@ type ByYouth []*github.Issue
 
 func (is ByYouth) Len() int           { return len(is) }
 func (is ByYouth) Swap(i, j int)      { is[i], is[j] = is[j], is[i] }
-func (is ByYouth) Less(i, j int) bool { return is[i].GetCreatedAt().After(is[j].GetCreatedAt()) }
+func (is ByYouth) Less(i, j int) bool { return is[i].GetNumber() > is[j].GetNumber() }
 
 func FetchIssues(client *github.Client, ctx context.Context, cfg *Config) ([]*github.Issue, error) {
 	issues := []*github.Issue{}
