@@ -62,31 +62,14 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 }
 
 func exportIssue(issue Issue, cfg *Config) error {
-	data := struct {
-		TITLE         string
-		ISSUE_TITLE   string
-		ISSUE_CONTENT string
-	}{
-		TITLE:         cfg.Site.Title,
-		ISSUE_TITLE:   issue.Title,
-		ISSUE_CONTENT: issue.Content,
-	}
-
-	issueTmpl := mustache.RenderFileInLayout("tmpl/issue.mustache", "tmpl/layout.mustache", data)
+	issueTmpl := mustache.RenderFileInLayout("tmpl/issue.mustache", "tmpl/layout.mustache", issue)
 	outname := filepath.Join(cfg.Repository.TargetDir, issue.Link)
 	err := ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
 	return err
 }
 
-func exportIndex(issues []Issue, cfg *Config) error {
-	data := struct {
-		TITLE  string
-		ISSUES []Issue
-	}{
-		TITLE:  cfg.Site.Title,
-		ISSUES: issues,
-	}
-	indexTmpl := mustache.RenderFileInLayout("tmpl/index.mustache", "tmpl/layout.mustache", data)
+func exportIndex(Issues []Issue, cfg *Config) error {
+	indexTmpl := mustache.RenderFileInLayout("tmpl/index.mustache", "tmpl/layout.mustache", map[string][]Issue{"Issues": Issues}, cfg.Site)
 	outname := filepath.Join(cfg.Repository.TargetDir, "index.html")
 	err := ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
 	return err

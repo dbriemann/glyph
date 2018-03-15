@@ -7,7 +7,10 @@ type Repository struct {
 }
 
 type Site struct {
-	Title string `toml:"title"`
+	Title       string `toml:"title"`
+	Author      string `toml:"author"`
+	OneLineDesc string `toml:"onelinedesc"`
+	Twitter     string `toml:"twitter"`
 }
 
 type Config struct {
