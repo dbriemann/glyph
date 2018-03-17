@@ -21,6 +21,7 @@ type Issue struct {
 	Link    string // slugified title
 	Content string
 	Summary string
+	Labels  []string
 	Created time.Time
 }
 
@@ -63,7 +64,9 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 			Title:   issue.GetTitle(),
 			Link:    slug.Make(issue.GetTitle()) + ".html",
 			Created: issue.GetCreatedAt(),
+			Labels:  []string{},
 		}
+		// TODO we could add syntax highlighting with chroma here.
 		if exIssue.Title != "" {
 			exIssue.Content = string(gfm.Markdown([]byte(issue.GetBody())))
 			doc, err := goquery.NewDocumentFromReader(strings.NewReader(exIssue.Content))
@@ -74,6 +77,10 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 				if err == nil {
 					exIssue.Summary = html
 				}
+			}
+
+			for _, label := range issue.Labels {
+				exIssue.Labels = append(exIssue.Labels, label.GetName())
 			}
 
 			export = append(export, exIssue)

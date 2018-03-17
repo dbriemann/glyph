@@ -29,6 +29,7 @@ var (
 // TODO 2.a. option: init project
 // TODO 2.b. option: build project
 // TODO 3. check config data for sanity
+// TODO 4. add syntax highlighting with chroma
 
 func main() {
 	// Read config file and check sanity (TODO).
