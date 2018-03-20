@@ -123,7 +123,7 @@ func exportIssue(issue Issue, cfg *Config) error {
 		"Today": time.Now(),
 		"Issue": issue,
 	}
-	issueTmpl, err := mustache.RenderFileInLayout("tmpl/issue.mustache", "tmpl/layout.mustache", data)
+	issueTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "issue.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func exportIndex(issues []Issue, cfg *Config) error {
 		"Today":  time.Now(),
 		"Issues": issues,
 	}
-	indexTmpl, err := mustache.RenderFileInLayout("tmpl/index.mustache", "tmpl/layout.mustache", data)
+	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "index.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {
 		return err
 	}

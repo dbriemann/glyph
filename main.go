@@ -15,13 +15,14 @@ import (
 
 const (
 	feedFile   = "feed.atom"
-	baseDir    = "includes"
+	baseDir    = "themes"
 	configFile = "config.toml"
 )
 
 var (
-	cfg    Config
-	outDir string
+	cfg      Config
+	themeDir = ""
+	outDir   string
 )
 
 // TODO 1. replace explicit panics with error messages and proper handling
@@ -58,17 +59,29 @@ func main() {
 		}
 	}
 
-	// Copy include files (css and js stuff).
-	files, err := ioutil.ReadDir(baseDir)
+	// Try to open theme folder..
+	themeDir = filepath.Join(baseDir, cfg.Site.Theme)
+	finfo, err = os.Stat(themeDir)
+	if err != nil {
+		panic(fmt.Sprintf("cannot load theme %s: %s", cfg.Site.Theme, err.Error()))
+	}
+	if !finfo.IsDir() {
+		panic(fmt.Sprintf("%s should be a directory but is a file", cfg.Site.Theme))
+	}
+
+	// Copy theme files except mustache template files.
+	files, err := ioutil.ReadDir(themeDir)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	for _, f := range files {
-		src := filepath.Join(baseDir, f.Name())
-		dst := filepath.Join(cfg.Repository.TargetDir, f.Name())
-		if err := copyFile(src, dst); err != nil {
-			panic(err.Error())
+		if filepath.Ext(f.Name()) != ".mustache" {
+			src := filepath.Join(themeDir, f.Name())
+			dst := filepath.Join(cfg.Repository.TargetDir, f.Name())
+			if err := copyFile(src, dst); err != nil {
+				panic(err.Error())
+			}
 		}
 	}
 

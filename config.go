@@ -12,6 +12,7 @@ type Site struct {
 	OneLineDesc string `toml:"onelinedesc"`
 	Twitter     string `toml:"twitter"`
 	Mail        string `toml:"mail"`
+	Theme       string `toml:"theme"`
 }
 
 type Config struct {
