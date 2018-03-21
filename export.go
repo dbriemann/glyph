@@ -53,7 +53,7 @@ func exportFeed(issues []Issue) error {
 		return err
 	}
 
-	return ioutil.WriteFile(filepath.Join(cfg.Repository.TargetDir, feedFile), []byte(atom), 0755)
+	return ioutil.WriteFile(filepath.Join(cfg.Repository.OutputDir, feedFile), []byte(atom), 0755)
 }
 
 func prepareIssues(issues []*github.Issue) ([]Issue, error) {
@@ -66,12 +66,12 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 			Created: issue.GetCreatedAt(),
 			Labels:  []string{},
 		}
-		// TODO we could add syntax highlighting with chroma here.
+		// TODO maybe add syntax highlighting with chroma here?
 		if exIssue.Title != "" {
 			exIssue.Content = string(gfm.Markdown([]byte(issue.GetBody())))
 			doc, err := goquery.NewDocumentFromReader(strings.NewReader(exIssue.Content))
 			if err == nil {
-				// Create a nice summary / introduction.
+				// Use first paragraph(p) as summary.
 				firstp := doc.Find("p").First()
 				html, err := firstp.Html()
 				if err == nil {
@@ -91,7 +91,7 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 	return export, nil
 }
 
-func BuildSite(issues []*github.Issue, cfg *Config) error {
+func BuildSite(issues []*github.Issue, cfg Config) error {
 	exIssues, err := prepareIssues(issues)
 	if err != nil {
 		return err
@@ -109,6 +109,11 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 		return err
 	}
 
+	err = exportAbout(cfg)
+	if err != nil {
+		return err
+	}
+
 	err = exportIndex(exIssues, cfg)
 	if err != nil {
 		return err
@@ -117,30 +122,46 @@ func BuildSite(issues []*github.Issue, cfg *Config) error {
 	return nil
 }
 
-func exportIssue(issue Issue, cfg *Config) error {
+func exportAbout(cfg Config) error {
 	data := map[string]interface{}{
-		"Site":  cfg.Site,
-		"Today": time.Now(),
-		"Issue": issue,
+		"Site":   cfg.Site,
+		"Today":  time.Now(),
+		"Custom": cfg.Custom,
+	}
+	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "about.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
+	if err != nil {
+		return err
+	}
+	outname := filepath.Join(cfg.Repository.OutputDir, "about.html")
+	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
+}
+
+func exportIssue(issue Issue, cfg Config) error {
+	data := map[string]interface{}{
+		"Site":   cfg.Site,
+		"Today":  time.Now(),
+		"Issue":  issue,
+		"Custom": cfg.Custom,
 	}
 	issueTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "issue.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {
 		return err
 	}
-	outname := filepath.Join(cfg.Repository.TargetDir, issue.Link)
+	outname := filepath.Join(cfg.Repository.OutputDir, issue.Link)
 	return ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
 }
 
-func exportIndex(issues []Issue, cfg *Config) error {
+func exportIndex(issues []Issue, cfg Config) error {
 	data := map[string]interface{}{
 		"Site":   cfg.Site,
 		"Today":  time.Now(),
 		"Issues": issues,
+		"Custom": cfg.Custom,
 	}
 	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "index.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {
 		return err
 	}
-	outname := filepath.Join(cfg.Repository.TargetDir, "index.html")
+	outname := filepath.Join(cfg.Repository.OutputDir, "index.html")
 	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
 }

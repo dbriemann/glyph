@@ -3,7 +3,7 @@ package main
 type Repository struct {
 	Users     []string `toml:"users"` // first must be login name
 	Name      string   `toml:"name"`
-	TargetDir string   `toml:"target_dir"`
+	OutputDir string   `toml:"output_dir"`
 }
 
 type Site struct {
@@ -16,8 +16,7 @@ type Site struct {
 }
 
 type Config struct {
-	GithubToken string                 `toml:"github_token"`
-	Repository  Repository             `toml:"repository"`
-	Site        Site                   `toml:"site"`
-	Custom      map[string]interface{} `toml:"custom"`
+	Repository Repository             `toml:"repository"`
+	Site       Site                   `toml:"site"`
+	Custom     map[string]interface{} `toml:"custom"`
 }

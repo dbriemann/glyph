@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
@@ -26,4 +27,9 @@ func copyFile(src, dst string) (err error) {
 	}
 	err = out.Sync()
 	return
+}
+
+func bye(msg string, code int) {
+	fmt.Println(msg)
+	os.Exit(code)
 }
