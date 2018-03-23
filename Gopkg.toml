@@ -24,6 +24,9 @@
 #   go-tests = true
 #   unused-packages = true
 
+[[override]]
+  name = "github.com/russross/blackfriday"
+  version = "1.4.0"
 
 [[constraint]]
   name = "github.com/BurntSushi/toml"
@@ -56,3 +59,5 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+
