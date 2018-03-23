@@ -16,9 +16,4 @@ deploy:
   file: glyph
   skip_cleanup: true
   on:    
-    repo: dbriemann/glyph
-    tags: false
-    branches:
-      only:
-        - master
-    #tags: true
+    tags: true
