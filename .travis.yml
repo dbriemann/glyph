@@ -4,6 +4,10 @@ language: go
 # code in vendor/
 install: true
 
+branches:
+  only:
+    - master
+
 # Don't email me the results of the test runs.
 notifications:
   email: false

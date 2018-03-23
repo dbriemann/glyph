@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/dbriemann/glyph.svg?branch=master)](https://travis-ci.org/dbriemann/glyph)
+
 # glyph
 A static site generator utilizing Github issues and Github pages.
 
