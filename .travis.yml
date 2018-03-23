@@ -6,6 +6,6 @@ install: true
 
 # Don't email me the results of the test runs.
 notifications:
-	email: false
+  email: false
 
 script: go build
