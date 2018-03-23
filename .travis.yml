@@ -16,5 +16,5 @@ deploy:
   file: glyph
   skip_cleanup: true
   on:
-	dbriemann/glyph
+    dbriemann/glyph
     #tags: true
