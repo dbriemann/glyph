@@ -17,12 +17,13 @@ const (
 	feedFile   = "feed.atom"
 	baseDir    = "themes"
 	configFile = "config.toml"
+
+	outDir = "docs"
 )
 
 var (
 	cfg      Config
 	themeDir = ""
-	outDir   string
 )
 
 // TODO add syntax highlighting with chroma?
@@ -40,9 +41,6 @@ func main() {
 	// Test config data sanity.
 	if cfg.Repository.Name == "" {
 		bye("config file: repository name missing", 1)
-	}
-	if cfg.Repository.OutputDir == "" {
-		bye("config file: output directory missing", 1)
 	}
 	if len(cfg.Repository.Users) < 1 {
 		bye("config file: no user(s) provided", 1)
@@ -68,10 +66,11 @@ func main() {
 	}
 
 	// Set output directory.
-	finfo, err := os.Stat(cfg.Repository.OutputDir)
+	finfo, err := os.Stat(outDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = os.Mkdir(cfg.Repository.OutputDir, 0755)
+			// TODO write empty jekyll yml
+			err = os.Mkdir(outDir, 0755)
 			if err != nil {
 				bye(fmt.Sprintf("could not create output directory: %s", err.Error()), 1)
 			}
@@ -80,7 +79,7 @@ func main() {
 		}
 	} else {
 		if !finfo.IsDir() {
-			bye(fmt.Sprintf("%s should be a directory but is a file", cfg.Repository.OutputDir), 1)
+			bye(fmt.Sprintf("%s should be a directory but is a file", outDir), 1)
 		}
 	}
 
@@ -102,7 +101,7 @@ func main() {
 	for _, f := range files {
 		if filepath.Ext(f.Name()) != ".mustache" {
 			src := filepath.Join(themeDir, f.Name())
-			dst := filepath.Join(cfg.Repository.OutputDir, f.Name())
+			dst := filepath.Join(outDir, f.Name())
 			if err := copyFile(src, dst); err != nil {
 				bye(fmt.Sprintf("could not copy file: %s", err.Error()), 1)
 			}

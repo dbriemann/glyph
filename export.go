@@ -53,7 +53,7 @@ func exportFeed(issues []Issue) error {
 		return err
 	}
 
-	return ioutil.WriteFile(filepath.Join(cfg.Repository.OutputDir, feedFile), []byte(atom), 0755)
+	return ioutil.WriteFile(filepath.Join(outDir, feedFile), []byte(atom), 0755)
 }
 
 func prepareIssues(issues []*github.Issue) ([]Issue, error) {
@@ -109,10 +109,10 @@ func BuildSite(issues []*github.Issue, cfg Config) error {
 		return err
 	}
 
-	err = exportAbout(cfg)
-	if err != nil {
-		return err
-	}
+	//	err = exportAbout(cfg)
+	//	if err != nil {
+	//		return err
+	//	}
 
 	err = exportIndex(exIssues, cfg)
 	if err != nil {
@@ -122,19 +122,20 @@ func BuildSite(issues []*github.Issue, cfg Config) error {
 	return nil
 }
 
-func exportAbout(cfg Config) error {
-	data := map[string]interface{}{
-		"Site":   cfg.Site,
-		"Today":  time.Now(),
-		"Custom": cfg.Custom,
-	}
-	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "about.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
-	if err != nil {
-		return err
-	}
-	outname := filepath.Join(cfg.Repository.OutputDir, "about.html")
-	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
-}
+// TODO -- generalize all/most exports
+//func exportAbout(cfg Config) error {
+//	data := map[string]interface{}{
+//		"Site":   cfg.Site,
+//		"Today":  time.Now(),
+//		"Custom": cfg.Custom,
+//	}
+//	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "about.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
+//	if err != nil {
+//		return err
+//	}
+//	outname := filepath.Join(outDir, "about.html")
+//	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
+//}
 
 func exportIssue(issue Issue, cfg Config) error {
 	data := map[string]interface{}{
@@ -147,7 +148,7 @@ func exportIssue(issue Issue, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	outname := filepath.Join(cfg.Repository.OutputDir, issue.Link)
+	outname := filepath.Join(outDir, issue.Link)
 	return ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
 }
 
@@ -162,6 +163,6 @@ func exportIndex(issues []Issue, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	outname := filepath.Join(cfg.Repository.OutputDir, "index.html")
+	outname := filepath.Join(outDir, "index.html")
 	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
 }

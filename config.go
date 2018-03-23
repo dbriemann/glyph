@@ -1,9 +1,8 @@
 package main
 
 type Repository struct {
-	Users     []string `toml:"users"` // first must be login name
-	Name      string   `toml:"name"`
-	OutputDir string   `toml:"output_dir"`
+	Users []string `toml:"users"` // first must be login name
+	Name  string   `toml:"name"`
 }
 
 type Site struct {
