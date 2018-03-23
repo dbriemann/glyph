@@ -17,5 +17,5 @@ deploy:
   skip_cleanup: true
   on:    
     repo: dbriemann/glyph
-    #branch: master
+    branch: master
     #tags: true
