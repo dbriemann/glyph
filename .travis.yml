@@ -15,6 +15,7 @@ deploy:
   api_key: $GITHUB_OAUTH_TOKEN
   file: glyph
   skip_cleanup: true
-  on:
-    dbriemann/glyph
+  on:    
+    repo: dbriemann/glyph
+    #branch: master
     #tags: true
