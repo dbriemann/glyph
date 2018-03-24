@@ -14,11 +14,21 @@ type Site struct {
 	Theme       string `toml:"Theme"`
 }
 
-type Theme struct {
-	Name string `toml:"Name"`
+type Template struct {
+	Source string `toml:"Source"`
+	Layout string `toml:"Layout"`
+	Target string `toml:"Target"`
 }
 
-type Config struct {
+type ThemeConfig struct {
+	Name           string                 `toml:"Name"`
+	IndexTemplate  Template               `toml:"IndexTemplate"`
+	IssueTemplate  Template               `toml:"IssueTemplate"`
+	OtherTemplates []Template             `toml:"OtherTemplates"`
+	Custom         map[string]interface{} `toml:"Custom"`
+}
+
+type BaseConfig struct {
 	Repository Repository             `toml:"Repository"`
 	Site       Site                   `toml:"Site"`
 	Custom     map[string]interface{} `toml:"Custom"`

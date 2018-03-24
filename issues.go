@@ -14,7 +14,7 @@ func (is ByYouth) Len() int           { return len(is) }
 func (is ByYouth) Swap(i, j int)      { is[i], is[j] = is[j], is[i] }
 func (is ByYouth) Less(i, j int) bool { return is[i].GetNumber() > is[j].GetNumber() }
 
-func FetchIssues(client *github.Client, ctx context.Context, cfg Config) ([]*github.Issue, error) {
+func FetchIssues(client *github.Client, ctx context.Context, cfg BaseConfig) ([]*github.Issue, error) {
 	issues := []*github.Issue{}
 
 	for _, uname := range cfg.Repository.Users {

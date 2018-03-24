@@ -28,10 +28,10 @@ type Issue struct {
 func exportFeed(issues []Issue) error {
 	now := time.Now()
 	feed := &feeds.Feed{
-		Title:       cfg.Site.Title,
-		Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s", cfg.Repository.Users[0], cfg.Repository.Name)},
-		Description: cfg.Site.OneLineDesc,
-		Author:      &feeds.Author{Name: cfg.Site.Author, Email: cfg.Site.Mail},
+		Title:       baseCfg.Site.Title,
+		Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name)},
+		Description: baseCfg.Site.OneLineDesc,
+		Author:      &feeds.Author{Name: baseCfg.Site.Author, Email: baseCfg.Site.Mail},
 		Created:     now,
 	}
 
@@ -40,9 +40,9 @@ func exportFeed(issues []Issue) error {
 	for _, issue := range issues {
 		item := &feeds.Item{
 			Title:       issue.Title,
-			Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s/%s", cfg.Repository.Users[0], cfg.Repository.Name, issue.Link)},
+			Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name, issue.Link)},
 			Description: issue.Summary,
-			Author:      &feeds.Author{Name: cfg.Site.Author, Email: cfg.Site.Mail},
+			Author:      &feeds.Author{Name: baseCfg.Site.Author, Email: baseCfg.Site.Mail},
 			Created:     issue.Created,
 		}
 		feed.Items = append(feed.Items, item)
@@ -91,14 +91,14 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 	return export, nil
 }
 
-func BuildSite(issues []*github.Issue, cfg Config) error {
+func BuildSite(issues []*github.Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
 	exIssues, err := prepareIssues(issues)
 	if err != nil {
 		return err
 	}
 
 	for _, exis := range exIssues {
-		err := exportIssue(exis, cfg)
+		err := exportIssue(exis, baseCfg, themeCfg)
 		if err != nil {
 			return err
 		}
@@ -109,12 +109,7 @@ func BuildSite(issues []*github.Issue, cfg Config) error {
 		return err
 	}
 
-	//	err = exportAbout(cfg)
-	//	if err != nil {
-	//		return err
-	//	}
-
-	err = exportIndex(exIssues, cfg)
+	err = exportTemplate(themeCfg.IndexTemplate, exIssues, baseCfg, themeCfg)
 	if err != nil {
 		return err
 	}
@@ -122,27 +117,37 @@ func BuildSite(issues []*github.Issue, cfg Config) error {
 	return nil
 }
 
-// TODO -- generalize all/most exports
-//func exportAbout(cfg Config) error {
-//	data := map[string]interface{}{
-//		"Site":   cfg.Site,
-//		"Today":  time.Now(),
-//		"Custom": cfg.Custom,
-//	}
-//	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "about.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
-//	if err != nil {
-//		return err
-//	}
-//	outname := filepath.Join(outDir, "about.html")
-//	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
-//}
-
-func exportIssue(issue Issue, cfg Config) error {
+func exportTemplate(template Template, issues []Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
 	data := map[string]interface{}{
-		"Site":   cfg.Site,
+		"Site":   baseCfg.Site,
+		"Today":  time.Now(),
+		"Issues": issues,
+		"Custom": baseCfg.Custom,
+		"Theme":  themeCfg,
+	}
+
+	var tmpl string
+	var err error
+	if template.Layout == "" {
+		tmpl, err = mustache.RenderFile(filepath.Join(themeDir, template.Source), data)
+	} else {
+		tmpl, err = mustache.RenderFileInLayout(filepath.Join(themeDir, template.Source), filepath.Join(themeDir, template.Layout), data)
+	}
+	if err != nil {
+		return err
+	}
+
+	outname := filepath.Join(outDir, template.Target)
+	return ioutil.WriteFile(outname, []byte(tmpl), 0755)
+}
+
+func exportIssue(issue Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
+	data := map[string]interface{}{
+		"Site":   baseCfg.Site,
 		"Today":  time.Now(),
 		"Issue":  issue,
-		"Custom": cfg.Custom,
+		"Custom": baseCfg.Custom,
+		"Theme":  themeCfg,
 	}
 	issueTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "issue.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {
@@ -150,19 +155,4 @@ func exportIssue(issue Issue, cfg Config) error {
 	}
 	outname := filepath.Join(outDir, issue.Link)
 	return ioutil.WriteFile(outname, []byte(issueTmpl), 0755)
-}
-
-func exportIndex(issues []Issue, cfg Config) error {
-	data := map[string]interface{}{
-		"Site":   cfg.Site,
-		"Today":  time.Now(),
-		"Issues": issues,
-		"Custom": cfg.Custom,
-	}
-	indexTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "index.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
-	if err != nil {
-		return err
-	}
-	outname := filepath.Join(outDir, "index.html")
-	return ioutil.WriteFile(outname, []byte(indexTmpl), 0755)
 }

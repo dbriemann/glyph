@@ -22,7 +22,8 @@ const (
 )
 
 var (
-	cfg      Config
+	baseCfg  BaseConfig
+	themeCfg ThemeConfig
 	themeDir = ""
 )
 
@@ -34,35 +35,35 @@ func main() {
 	if err != nil {
 		bye(fmt.Sprintf("could not read config file: %s", err.Error()), 1)
 	}
-	if _, err := toml.Decode(string(raw), &cfg); err != nil {
+	if _, err := toml.Decode(string(raw), &baseCfg); err != nil {
 		bye(fmt.Sprintf("could not parse config file: %s", err.Error()), 1)
 	}
 
 	// Test config data sanity.
-	if cfg.Repository.Name == "" {
+	if baseCfg.Repository.Name == "" {
 		bye("config file: repository name missing", 1)
 	}
-	if len(cfg.Repository.Users) < 1 {
+	if len(baseCfg.Repository.Users) < 1 {
 		bye("config file: no user(s) provided", 1)
 	}
-	if cfg.Site.Title == "" {
+	if baseCfg.Site.Title == "" {
 		fmt.Println("warning: no site title set")
 	}
-	if cfg.Site.Author == "" {
+	if baseCfg.Site.Author == "" {
 		fmt.Println("warning: no site author set")
 	}
-	if cfg.Site.OneLineDesc == "" {
+	if baseCfg.Site.OneLineDesc == "" {
 		fmt.Println("warning: no one line description set")
 	}
-	if cfg.Site.Mail == "" {
+	if baseCfg.Site.Mail == "" {
 		fmt.Println("warning: no contact mail set")
 	}
-	if cfg.Site.Twitter == "" {
+	if baseCfg.Site.Twitter == "" {
 		fmt.Println("warning: no twitter handle set")
 	}
-	if cfg.Site.Theme == "" {
+	if baseCfg.Site.Theme == "" {
 		fmt.Println("warning: no theme set.. falling back to default")
-		cfg.Site.Theme = "default"
+		baseCfg.Site.Theme = "default"
 	}
 
 	// Set output directory.
@@ -84,22 +85,51 @@ func main() {
 	}
 
 	// Try to open theme folder..
-	themeDir = filepath.Join(baseDir, cfg.Site.Theme)
+	themeDir = filepath.Join(baseDir, baseCfg.Site.Theme)
 	finfo, err = os.Stat(themeDir)
 	if err != nil || !finfo.IsDir() {
-		fmt.Sprintf("cannot load theme %s: %s\n", cfg.Site.Theme, err.Error())
+		fmt.Sprintf("cannot load theme %s: %s\n", baseCfg.Site.Theme, err.Error())
 		fmt.Println("falling back to default theme")
+		themeDir = filepath.Join(baseDir, "default")
 	}
-	themeDir = filepath.Join(baseDir, "default")
 
-	// Copy theme files except mustache template files.
+	// Read theme config file
+	raw, err = ioutil.ReadFile(filepath.Join(themeDir, configFile))
+	if err != nil {
+		bye(fmt.Sprintf("could not read theme config file: %s", err.Error()), 1)
+	}
+	if _, err := toml.Decode(string(raw), &themeCfg); err != nil {
+		bye(fmt.Sprintf("could not parse config file: %s", err.Error()), 1)
+	}
+
+	// Test config data sanity.
+	if themeCfg.Name == "" {
+		bye("theme config file: no name provided", 1)
+	}
+	if themeCfg.IndexTemplate.Source == "" {
+		bye("theme config file: no index template source provided", 1)
+	}
+	if themeCfg.IndexTemplate.Target == "" {
+		bye("theme config file: no index template target provided", 1)
+	}
+	if themeCfg.IssueTemplate.Source == "" {
+		bye("theme config file: no issue template source provided", 1)
+	}
+
+	for _, t := range themeCfg.OtherTemplates {
+		if t.Source == "" || t.Target == "" {
+			bye("theme config file: custom template data incomplete (source or target missing)", 1)
+		}
+	}
+
+	// Copy theme files except mustache template files and theme config file.
 	files, err := ioutil.ReadDir(themeDir)
 	if err != nil {
 		bye(fmt.Sprintf("could not read access directory: %s", err.Error()), 1)
 	}
 
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".mustache" {
+		if filepath.Ext(f.Name()) != ".mustache" && f.Name() != configFile {
 			src := filepath.Join(themeDir, f.Name())
 			dst := filepath.Join(outDir, f.Name())
 			if err := copyFile(src, dst); err != nil {
@@ -118,12 +148,12 @@ func main() {
 		bye("client dead", 1)
 	}
 
-	issues, err := FetchIssues(client, ctx, cfg)
+	issues, err := FetchIssues(client, ctx, baseCfg)
 	if err != nil {
 		bye(fmt.Sprintf("could not fetch issues from github: %s", err.Error()), 1)
 	}
 
-	err = BuildSite(issues, cfg)
+	err = BuildSite(issues, baseCfg, themeCfg)
 	if err != nil {
 		bye(fmt.Sprintf("could not build site: %s", err.Error()), 1)
 	}
