@@ -1,21 +1,25 @@
 package main
 
 type Repository struct {
-	Users []string `toml:"users"` // first must be login name
-	Name  string   `toml:"name"`
+	Users []string `toml:"Users"` // first must be login name
+	Name  string   `toml:"Name"`
 }
 
 type Site struct {
-	Title       string `toml:"title"`
-	Author      string `toml:"author"`
-	OneLineDesc string `toml:"onelinedesc"`
-	Twitter     string `toml:"twitter"`
-	Mail        string `toml:"mail"`
-	Theme       string `toml:"theme"`
+	Title       string `toml:"Title"`
+	Author      string `toml:"Author"`
+	OneLineDesc string `toml:"OneLineDesc"`
+	Twitter     string `toml:"Twitter"`
+	Mail        string `toml:"Mail"`
+	Theme       string `toml:"Theme"`
+}
+
+type Theme struct {
+	Name string `toml:"Name"`
 }
 
 type Config struct {
-	Repository Repository             `toml:"repository"`
-	Site       Site                   `toml:"site"`
-	Custom     map[string]interface{} `toml:"custom"`
+	Repository Repository             `toml:"Repository"`
+	Site       Site                   `toml:"Site"`
+	Custom     map[string]interface{} `toml:"Custom"`
 }
