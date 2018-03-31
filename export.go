@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,12 +18,14 @@ import (
 )
 
 type Issue struct {
-	Title   string
-	Link    string // slugified title
-	Content string
-	Summary string
-	Labels  []string
-	Created time.Time
+	Number     int
+	Title      string
+	Link       string // slugified title
+	Content    string
+	Summary    string
+	Labels     []string
+	GithubLink string
+	Created    time.Time
 }
 
 func exportFeed(issues []Issue) error {
@@ -56,16 +59,19 @@ func exportFeed(issues []Issue) error {
 	return ioutil.WriteFile(filepath.Join(outDir, feedFile), []byte(atom), 0755)
 }
 
-func prepareIssues(issues []*github.Issue) ([]Issue, error) {
+func prepareIssues(issues []*github.Issue, baseCfg BaseConfig) ([]Issue, error) {
 	export := []Issue{}
 
 	for _, issue := range issues {
 		exIssue := Issue{
-			Title:   issue.GetTitle(),
-			Link:    slug.Make(issue.GetTitle()) + ".html",
-			Created: issue.GetCreatedAt(),
-			Labels:  []string{},
+			Title:      issue.GetTitle(),
+			Link:       fmt.Sprintf("%d-%s.html", issue.GetNumber(), slug.Make(issue.GetTitle())),
+			Created:    issue.GetCreatedAt(),
+			Labels:     []string{},
+			GithubLink: issue.GetHTMLURL(),
+			Number:     issue.GetNumber(),
 		}
+
 		// TODO maybe add syntax highlighting with chroma here?
 		if exIssue.Title != "" {
 			exIssue.Content = string(gfm.Markdown([]byte(issue.GetBody())))
@@ -88,11 +94,46 @@ func prepareIssues(issues []*github.Issue) ([]Issue, error) {
 		// We ignore issues with empty titles.
 	}
 
+	thisRepoURL := "https://github.com/" + baseCfg.Repository.Users[0] + "/" + baseCfg.Repository.Name + "/issues/"
+	// Post processing loop over issues.
+	for i := 0; i < len(export); i++ {
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(export[i].Content))
+		if err == nil {
+			// Replace links that point to other intra-repo issues with intro-blog links.
+			doc.Find("body a").Each(func(index int, item *goquery.Selection) {
+				link, ok := item.Attr("href")
+				if ok {
+					issueNumStr := strings.TrimPrefix(link, thisRepoURL)
+					if issueNumStr != link {
+						// The link links to another issue. Let's extract the number
+						issueNumStr = strings.Trim(issueNumStr, " /")
+						issueNum, err := strconv.Atoi(issueNumStr)
+						if err == nil {
+							// Now that we have the issue number. Find the intra-blog link and replace the link.
+							for _, iss := range export {
+								if iss.Number == issueNum {
+									item.SetAttr("href", iss.Link)
+									break
+								}
+							}
+						} // We just ignore errors and don't change the links in those cases.
+					}
+				}
+			})
+
+			// Replace the old HTML document with the edited one.
+			nhtml, err := doc.Html()
+			if err == nil {
+				export[i].Content = nhtml
+			}
+		}
+	}
+
 	return export, nil
 }
 
 func BuildSite(issues []*github.Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
-	exIssues, err := prepareIssues(issues)
+	exIssues, err := prepareIssues(issues, baseCfg)
 	if err != nil {
 		return err
 	}
@@ -119,11 +160,12 @@ func BuildSite(issues []*github.Issue, baseCfg BaseConfig, themeCfg ThemeConfig)
 
 func exportTemplate(template Template, issues []Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
 	data := map[string]interface{}{
-		"Site":   baseCfg.Site,
-		"Today":  time.Now(),
-		"Issues": issues,
-		"Custom": baseCfg.Custom,
-		"Theme":  themeCfg,
+		"Site":       baseCfg.Site,
+		"Repository": baseCfg.Repository,
+		"Today":      time.Now(),
+		"Issues":     issues,
+		"Custom":     baseCfg.Custom,
+		"Theme":      themeCfg,
 	}
 
 	var tmpl string
@@ -143,11 +185,12 @@ func exportTemplate(template Template, issues []Issue, baseCfg BaseConfig, theme
 
 func exportIssue(issue Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
 	data := map[string]interface{}{
-		"Site":   baseCfg.Site,
-		"Today":  time.Now(),
-		"Issue":  issue,
-		"Custom": baseCfg.Custom,
-		"Theme":  themeCfg,
+		"Site":       baseCfg.Site,
+		"Repository": baseCfg.Repository,
+		"Today":      time.Now(),
+		"Issue":      issue,
+		"Custom":     baseCfg.Custom,
+		"Theme":      themeCfg,
 	}
 	issueTmpl, err := mustache.RenderFileInLayout(filepath.Join(themeDir, "issue.mustache"), filepath.Join(themeDir, "layout.mustache"), data)
 	if err != nil {

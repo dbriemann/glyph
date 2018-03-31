@@ -28,9 +28,10 @@ var (
 )
 
 // TODO add syntax highlighting with chroma?
+// TODO find repo internal issue links in issues and replace them
 
 func main() {
-	// Read config file and check sanity (TODO).
+	// Read config file and check sanity.
 	raw, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		bye(fmt.Sprintf("could not read config file: %s", err.Error()), 1)
@@ -70,10 +71,14 @@ func main() {
 	finfo, err := os.Stat(outDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// TODO write empty jekyll yml
 			err = os.Mkdir(outDir, 0755)
 			if err != nil {
 				bye(fmt.Sprintf("could not create output directory: %s", err.Error()), 1)
+			}
+
+			err = ioutil.WriteFile(filepath.Join(outDir, ".nojekyll"), []byte(""), 0755)
+			if err != nil {
+				bye(fmt.Sprintf("could not write .nojekyll file: %s", err.Error()), 1)
 			}
 		} else {
 			bye(fmt.Sprintf("could not access output directory: %s", err.Error()), 1)
