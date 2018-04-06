@@ -134,7 +134,7 @@ func main() {
 	}
 
 	for _, f := range files {
-		if filepath.Ext(f.Name()) != ".mustache" && f.Name() != configFile {
+		if filepath.Ext(f.Name()) != ".mustache" && f.Name() != configFile && f.Name() != "README.md" {
 			src := filepath.Join(themeDir, f.Name())
 			dst := filepath.Join(outDir, f.Name())
 			if err := copyFile(src, dst); err != nil {
