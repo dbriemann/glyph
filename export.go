@@ -32,18 +32,17 @@ func exportFeed(issues []Issue) error {
 	now := time.Now()
 	feed := &feeds.Feed{
 		Title:       baseCfg.Site.Title,
-		Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name)},
+		Link:        &feeds.Link{Href: fmt.Sprintf("https://%s.github.io/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name)},
 		Description: baseCfg.Site.OneLineDesc,
 		Author:      &feeds.Author{Name: baseCfg.Site.Author, Email: baseCfg.Site.Mail},
 		Created:     now,
 	}
-
 	feed.Items = []*feeds.Item{}
 
 	for _, issue := range issues {
 		item := &feeds.Item{
 			Title:       issue.Title,
-			Link:        &feeds.Link{Href: fmt.Sprintf("https//%s.github.io/%s/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name, issue.Link)},
+			Link:        &feeds.Link{Href: fmt.Sprintf("https://%s.github.io/%s/%s", baseCfg.Repository.Users[0], baseCfg.Repository.Name, issue.Link)},
 			Description: issue.Summary,
 			Author:      &feeds.Author{Name: baseCfg.Site.Author, Email: baseCfg.Site.Mail},
 			Created:     issue.Created,
