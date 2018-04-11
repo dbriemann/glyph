@@ -85,10 +85,17 @@ func prepareIssues(issues []*github.Issue, baseCfg BaseConfig) ([]Issue, error) 
 			}
 
 			for _, label := range issue.Labels {
-				exIssue.Labels = append(exIssue.Labels, label.GetName())
+				l := label.GetName()
+				// If there is a label called "draft" we skip this issue completely.
+				if l == "draft" {
+					goto SKIP_EXPORT
+				}
+				exIssue.Labels = append(exIssue.Labels, l)
 			}
 
 			export = append(export, exIssue)
+
+		SKIP_EXPORT:
 		}
 		// We ignore issues with empty titles.
 	}
