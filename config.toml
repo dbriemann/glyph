@@ -1,17 +1,36 @@
-# section repository contains all data regarding the repository that contains
+# ***********************************************
+# *** DO NOT ENTER YOUR GITHUB API TOKEN HERE ***
+# ***********************************************
+# GithubToken DOES NOT contain the actual API token.
+# GithubToken contains THE NAME OF THE ENVIRONMENT VARIABLE HOLDING THE TOKEN.
+# Usually just leave this as the default and export your API token if you want to use one.
+# Glyph also works without a Github API token. It is only needed for certain features (NOT IMPLEMENTED YET).
+#
+# This is a security measure so people don't commit their API token to their git repository.
+GithubToken = "GLYPH_GITHUB_TOKEN"
+
+
+# section Repository contains all data regarding the repository that contains
 # the site/blog issues.
-[repository]
-# users defines all users whose issues will be imported into the blog
+[Repository]
+# Users defines all users whose issues will be imported into the blog
 # the first user must be the owner of the blog repository
 # all usernames are login names for github
-users = ["dbriemann"]
-# name is just the name of the repository containing the blog issues/articles
-name = "blog"
-# target_dir is where juicer puts the built files. By default the docs folder is
-# used (see github pages documentation for more info). 
-target_dir = "docs"
+Users = ["your-github-username"]
+# Name is just the name of the repository containing the blog issues/articles
+Name = "blog"
 
-# section site contains all data that will be used in the statically generated
-# html. This includes titles, styles etc.
-[site]
-title = "RagingDave's random ramblings"
+# section Site contains all data that will be used in the statically generated html.
+[Site]
+Title = "Your Site Title"
+Author = "Your Name"
+OneLineDesc = "A short description of your content or something clever.."
+Twitter = "Your Twitter handle"
+Mail = "your email address"
+# in the theme folder there is a theme.toml which specifies theme specific pages
+Theme = "default"
+
+# section custom allows to pass custom data into the glyph templating process.
+[Custom]
+# for example:
+# MyPets = ["Tom", "Jerry"]

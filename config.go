@@ -29,7 +29,8 @@ type ThemeConfig struct {
 }
 
 type BaseConfig struct {
-	Repository Repository             `toml:"Repository"`
-	Site       Site                   `toml:"Site"`
-	Custom     map[string]interface{} `toml:"Custom"`
+	Repository  Repository             `toml:"Repository"`
+	Site        Site                   `toml:"Site"`
+	Custom      map[string]interface{} `toml:"Custom"`
+	GithubToken string                 `toml:"GithubToken"`
 }

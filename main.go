@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -39,6 +40,9 @@ func main() {
 	if _, err := toml.Decode(string(raw), &baseCfg); err != nil {
 		bye(fmt.Sprintf("could not parse config file: %s", err.Error()), 1)
 	}
+
+	// Fetch Github access token from environment.
+	token := os.Getenv(baseCfg.GithubToken)
 
 	// Test config data sanity.
 	if baseCfg.Repository.Name == "" {
@@ -143,11 +147,20 @@ func main() {
 		}
 	}
 
-	// We don't use access tokens because the rate limiting for unauthed access is good enough.
-	// This way we have an easy time using this in CI scripts without having to provide secret
-	// information.
 	ctx := context.Background()
-	client := github.NewClient(nil)
+	var client *github.Client
+
+	if token == "" {
+		// No Github token. Create client without authing to API.
+		client = github.NewClient(nil)
+	} else {
+		// Found a token. Auth and create client.
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client = github.NewClient(tc)
+	}
 
 	if client == nil {
 		bye("client dead", 1)
