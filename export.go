@@ -17,13 +17,18 @@ import (
 	gfm "github.com/shurcooL/github_flavored_markdown"
 )
 
+type Label struct {
+	Name string
+	Link string
+}
+
 type Issue struct {
 	Number     int
 	Title      string
 	Link       string // slugified title
 	Content    string
 	Summary    string
-	Labels     []string
+	Labels     []Label
 	GithubLink string
 	Created    time.Time
 }
@@ -66,7 +71,7 @@ func prepareIssues(issues []*github.Issue, baseCfg BaseConfig) ([]Issue, error) 
 			Title:      issue.GetTitle(),
 			Link:       fmt.Sprintf("%d-%s.html", issue.GetNumber(), slug.Make(issue.GetTitle())),
 			Created:    issue.GetCreatedAt(),
-			Labels:     []string{},
+			Labels:     []Label{},
 			GithubLink: issue.GetHTMLURL(),
 			Number:     issue.GetNumber(),
 		}
@@ -85,9 +90,12 @@ func prepareIssues(issues []*github.Issue, baseCfg BaseConfig) ([]Issue, error) 
 			}
 
 			for _, label := range issue.Labels {
-				l := label.GetName()
+				l := Label{
+					Name: label.GetName(),
+					Link: "label-" + label.GetName() + ".html",
+				}
 				// If there is a label called "draft" we skip this issue completely.
-				if l == "draft" {
+				if l.Name == "draft" {
 					goto SKIP_EXPORT
 				}
 				exIssue.Labels = append(exIssue.Labels, l)
@@ -139,11 +147,13 @@ func prepareIssues(issues []*github.Issue, baseCfg BaseConfig) ([]Issue, error) 
 }
 
 func BuildSite(issues []*github.Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
+	// Prepare issues for exporting.
 	exIssues, err := prepareIssues(issues, baseCfg)
 	if err != nil {
 		return err
 	}
 
+	// Export issue single pages.
 	for _, exis := range exIssues {
 		err := exportIssue(exis, baseCfg, themeCfg)
 		if err != nil {
@@ -151,28 +161,75 @@ func BuildSite(issues []*github.Issue, baseCfg BaseConfig, themeCfg ThemeConfig)
 		}
 	}
 
+	// Export Atom feed.
 	err = exportFeed(exIssues)
 	if err != nil {
 		return err
 	}
 
-	err = exportTemplate(themeCfg.IndexTemplate, exIssues, baseCfg, themeCfg)
+	// Export index page.
+	err = exportTemplate(nil, themeCfg.IndexTemplate, exIssues, baseCfg, themeCfg)
 	if err != nil {
 		return err
+	}
+
+	// Export label index pages.
+	err = exportLabelIndexes(themeCfg.IndexTemplate, exIssues, baseCfg, themeCfg)
+	if err != nil {
+		return err
+	}
+
+	// Export custom other templates
+	for _, tmpl := range themeCfg.OtherTemplates {
+		err = exportTemplate(nil, tmpl, exIssues, baseCfg, themeCfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func exportTemplate(template Template, issues []Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
-	data := map[string]interface{}{
-		"Site":       baseCfg.Site,
-		"Repository": baseCfg.Repository,
-		"Today":      time.Now(),
-		"Issues":     issues,
-		"Custom":     baseCfg.Custom,
-		"Theme":      themeCfg,
+func exportLabelIndexes(template Template, issues []Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
+	labels := map[string]Label{}
+	issuesByLabel := map[string][]Issue{}
+	data := map[string]interface{}{}
+
+	// Collect all labels and corresponding issues.
+	for _, issue := range issues {
+		for _, l := range issue.Labels {
+			labels[l.Name] = l
+			issuesByLabel[l.Name] = append(issuesByLabel[l.Name], issue)
+		}
 	}
+
+	// Now export all issues by name.
+	for l, lIssues := range issuesByLabel {
+		data["SelectedLabel"] = labels[l]
+		tmpl := Template{
+			Source: template.Source,
+			Layout: template.Layout,
+			Target: labels[l].Link,
+		}
+		err := exportTemplate(data, tmpl, lIssues, baseCfg, themeCfg)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func exportTemplate(data map[string]interface{}, template Template, issues []Issue, baseCfg BaseConfig, themeCfg ThemeConfig) error {
+	if data == nil {
+		data = map[string]interface{}{}
+	}
+	data["Site"] = baseCfg.Site
+	data["Repository"] = baseCfg.Repository
+	data["Today"] = time.Now()
+	data["Issues"] = issues
+	data["Custom"] = baseCfg.Custom
+	data["Theme"] = themeCfg
 
 	var tmpl string
 	var err error
