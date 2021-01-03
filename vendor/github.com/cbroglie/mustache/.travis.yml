@@ -1,7 +1,0 @@
-language: go
-
-go:
-  - 1.9
-  - master
-
-script: make ci
