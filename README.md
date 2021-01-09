@@ -4,6 +4,8 @@
 
 A static site generator utilizing Github issues and Github pages.
 
+See [my blog](https://dbriemann.github.io/blog/) as an example of how it can look and [my introduction to Glyph](https://dbriemann.github.io/blog/2-introducing-glyph-static-site-generator-powered-by-github-issues-and-pages.html).
+
 ## Usage
 
 Install glyph by downloading [the latest release](https://github.com/dbriemann/glyph/releases/latest) or by running `go get -u -v github.com/dbriemann/glyph`.
