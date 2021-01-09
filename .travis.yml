@@ -1,8 +1,6 @@
 language: go
-
-# Skip the install step. Don't `go get` dependencies. Only build with the
-# code in vendor/
-install: true
+go:
+  - 1.15.6
 
 # Don't email me the results of the test runs.
 notifications:
